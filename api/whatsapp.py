@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 OPENAI_API_KEY     = os.environ.get("OPENAI_API_KEY", "")
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN  = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_NUMBER      = "+18106921979"
+TWILIO_NUMBER      = "+19475003923"
 BOT_NAME           = "Clarivista"
 APPOINTMENTS_FILE  = "/tmp/altavision_appointments.json"
 
@@ -223,9 +223,9 @@ class handler(BaseHTTPRequestHandler):
 
         from_number = from_raw.replace("whatsapp:", "")
 
-        skip = {TWILIO_NUMBER, f"whatsapp:{TWILIO_NUMBER}", BOT_NAME.lower(),
-                BOT_NAME, "system", ""}
-        if author.lower() in {s.lower() for s in skip} or not body:
+        # Only skip messages explicitly from the bot/system — never skip on empty ProfileName
+        skip = {TWILIO_NUMBER, f"whatsapp:{TWILIO_NUMBER}", BOT_NAME.lower(), BOT_NAME, "system"}
+        if (author and author.lower() in {s.lower() for s in skip}) or not body:
             self._send_ok()
             return
 
