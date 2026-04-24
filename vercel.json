@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/whatsapp",     "destination": "/api/whatsapp.py" },
+    { "source": "/api/chat",         "destination": "/api/chat.py" },
+    { "source": "/api/appointments", "destination": "/api/appointments.py" }
+  ]
+}

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · Alta Visión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:      #1A5F8A;
+      --primary-dark: #0F3D5C;
+      --primary-light:#2E84B5;
+      --primary-pale: #EBF5FB;
+      --accent:       #E8A020;
+      --green:        #10B981;
+      --red:          #EF4444;
+      --yellow:       #F59E0B;
+      --dark:         #1a1a2e;
+      --text:         #2d3748;
+      --text-light:   #718096;
+      --white:        #ffffff;
+      --bg:           #F0F4F8;
+      --border:       #e2e8f0;
+      --sidebar-w:    240px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ─── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary-dark);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+    }
+
+    .sidebar-logo {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-badge {
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem;
+    }
+
+    .sidebar-logo h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      line-height: 1.2;
+    }
+
+    .sidebar-logo p { font-size: 0.65rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
+
+    .sidebar-nav { flex: 1; padding: 1.5rem 0; }
+
+    .nav-section { padding: 0 1.25rem; margin-bottom: 0.5rem; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.4; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.7rem 1.25rem;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .nav-item.active { border-right: 3px solid var(--accent); }
+
+    .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.72rem; opacity: 0.4;
+    }
+
+    /* ── MAIN ─── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 40;
+    }
+
+    .topbar h2 { font-size: 1rem; font-weight: 600; }
+    .topbar p  { font-size: 0.78rem; color: var(--text-light); }
+
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+
+    .refresh-btn {
+      background: var(--primary-pale);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+      transition: background .15s;
+    }
+
+    .refresh-btn:hover { background: var(--primary); color: white; }
+
+    .live-indicator {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.72rem; color: var(--green);
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-live 2s infinite;
+    }
+
+    @keyframes pulse-live {
+      0%,100% { opacity:1; transform: scale(1); }
+      50%      { opacity:.4; transform: scale(0.7); }
+    }
+
+    .content { padding: 2rem; flex: 1; }
+
+    /* ── STATS ─── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1024px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 1.4rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid var(--border);
+      transition: transform .2s, box-shadow .2s;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+
+    .stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+
+    .stat-icon.blue   { background: var(--primary-pale); }
+    .stat-icon.yellow { background: #FFF7ED; }
+    .stat-icon.green  { background: #ECFDF5; }
+    .stat-icon.red    { background: #FEF2F2; }
+
+    .stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; font-weight: 700;
+      color: var(--dark); line-height: 1;
+    }
+
+    .stat-label { font-size: 0.75rem; color: var(--text-light); margin-top: 0.2rem; }
+
+    /* ── TABLE ─── */
+    .table-card {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+
+    .table-header h3 { font-size: 0.95rem; font-weight: 700; }
+    .table-header p  { font-size: 0.78rem; color: var(--text-light); }
+
+    .filter-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .filter-tab {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-light);
+      padding: 0.35rem 0.9rem;
+      border-radius: 50px;
+      font-size: 0.75rem; font-weight: 600;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+      transition: all .15s;
+    }
+
+    .filter-tab.active, .filter-tab:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      text-align: left;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-light);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #FAFBFC; }
+
+    tbody td { padding: 1rem 1.5rem; font-size: 0.82rem; vertical-align: middle; }
+
+    .appt-id { font-family: monospace; font-weight: 700; color: var(--primary); font-size: 0.8rem; }
+
+    .appt-name { font-weight: 600; }
+    .appt-phone { color: var(--text-light); font-size: 0.75rem; }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .status-badge.pending   { background: #FFF7ED; color: #C2820A; }
+    .status-badge.confirmed { background: #ECFDF5; color: #059669; }
+    .status-badge.cancelled { background: #FEF2F2; color: #DC2626; }
+
+    .actions { display: flex; gap: 0.5rem; }
+
+    .action-btn {
+      padding: 0.35rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.72rem; font-weight: 700;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+      border: none;
+      transition: opacity .15s, transform .1s;
+    }
+
+    .action-btn:hover { opacity: 0.85; transform: scale(1.03); }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-confirm { background: var(--green); color: white; }
+    .btn-cancel  { background: var(--red); color: white; }
+
+    /* Empty state */
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--text-light);
+    }
+
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { font-size: 0.85rem; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 2rem; right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.85rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 200;
+    }
+
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── SIDEBAR ────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">AV</div>
+      <div>
+        <h1>Alta Visión</h1>
+        <p>Panel de administración</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <p class="nav-section">Principal</p>
+      <a class="nav-item active">
+        <span class="nav-icon">📅</span> Citas
+      </a>
+      <a class="nav-item" href="index.html">
+        <span class="nav-icon">🌐</span> Landing Page
+      </a>
+      <p class="nav-section" style="margin-top:1rem">Información</p>
+      <div class="nav-item">
+        <span class="nav-icon">📞</span> 6164585 op. 5
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">📱</span> +18106921979
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      👁️ Clarivista · Demo v1.0
+    </div>
+  </aside>
+
+  <!-- ── MAIN ───────────────────────────────── -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2>Dashboard de Citas</h2>
+        <p id="lastUpdate">Actualizando…</p>
+      </div>
+      <div class="topbar-right">
+        <span class="live-indicator">
+          <span class="live-dot"></span> En vivo
+        </span>
+        <button class="refresh-btn" onclick="loadAppointments()">↻ Actualizar</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon blue">📅</div>
+          <div>
+            <div class="stat-value" id="statTotal">—</div>
+            <div class="stat-label">Total Citas</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow">⏳</div>
+          <div>
+            <div class="stat-value" id="statPending">—</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div>
+            <div class="stat-value" id="statConfirmed">—</div>
+            <div class="stat-label">Confirmadas</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">❌</div>
+          <div>
+            <div class="stat-value" id="statCancelled">—</div>
+            <div class="stat-label">Canceladas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <h3>Listado de Citas</h3>
+            <p>Citas agendadas por Clarivista vía WhatsApp y web</p>
+          </div>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all"    onclick="setFilter('all',this)">Todas</button>
+            <button class="filter-tab"        data-filter="pending"   onclick="setFilter('pending',this)">Pendientes</button>
+            <button class="filter-tab"        data-filter="confirmed" onclick="setFilter('confirmed',this)">Confirmadas</button>
+            <button class="filter-tab"        data-filter="cancelled" onclick="setFilter('cancelled',this)">Canceladas</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Paciente</th>
+                <th>Servicio</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const API = '/api/appointments';
+    let allAppointments = [];
+    let currentFilter  = 'all';
+
+    // ── Load ──────────────────────────────────
+    async function loadAppointments() {
+      try {
+        const res  = await fetch(API + '?t=' + Date.now());
+        const data = await res.json();
+        allAppointments = data;
+        updateStats(data);
+        renderTable(data);
+        document.getElementById('lastUpdate').textContent =
+          'Última actualización: ' + new Date().toLocaleTimeString('es-CO');
+      } catch {
+        showToast('⚠️ Error al cargar citas. Verifica la conexión.');
+      }
+    }
+
+    // ── Stats ─────────────────────────────────
+    function updateStats(data) {
+      document.getElementById('statTotal').textContent     = data.length;
+      document.getElementById('statPending').textContent   = data.filter(a => a.status === 'pending').length;
+      document.getElementById('statConfirmed').textContent = data.filter(a => a.status === 'confirmed').length;
+      document.getElementById('statCancelled').textContent = data.filter(a => a.status === 'cancelled').length;
+    }
+
+    // ── Filter ────────────────────────────────
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable(allAppointments);
+    }
+
+    // ── Render ────────────────────────────────
+    function renderTable(data) {
+      const filtered = currentFilter === 'all'
+        ? data
+        : data.filter(a => a.status === currentFilter);
+
+      const tbody = document.getElementById('appointmentsBody');
+
+      if (!filtered.length) {
+        tbody.innerHTML = `
+          <tr><td colspan="7">
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>${currentFilter === 'all'
+                ? 'Aún no hay citas. El bot empezará a recibirlas cuando los pacientes escriban por WhatsApp.'
+                : 'No hay citas con este estado.'
+              }</p>
+            </div>
+          </td></tr>`;
+        return;
+      }
+
+      // Sort newest first
+      const sorted = [...filtered].sort((a, b) =>
+        new Date(b.created_at) - new Date(a.created_at));
+
+      tbody.innerHTML = sorted.map(a => `
+        <tr id="row-${a.id}">
+          <td><span class="appt-id">#${a.id}</span></td>
+          <td>
+            <div class="appt-name">${escHtml(a.name)}</div>
+            <div class="appt-phone">${escHtml(a.phone)}</div>
+          </td>
+          <td>${escHtml(a.service)}</td>
+          <td>${escHtml(a.date)}</td>
+          <td>${escHtml(a.time)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td>
+            <div class="actions">
+              <button class="action-btn btn-confirm"
+                onclick="updateStatus('${a.id}','confirmed')"
+                ${a.status === 'confirmed' ? 'disabled' : ''}>
+                ✅ Confirmar
+              </button>
+              <button class="action-btn btn-cancel"
+                onclick="updateStatus('${a.id}','cancelled')"
+                ${a.status === 'cancelled' ? 'disabled' : ''}>
+                ✕ Cancelar
+              </button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function statusBadge(status) {
+      const map = {
+        pending:   ['⏳', 'Pendiente'],
+        confirmed: ['✅', 'Confirmada'],
+        cancelled: ['❌', 'Cancelada'],
+      };
+      const [icon, label] = map[status] || ['❓', status];
+      return `<span class="status-badge ${status}">${icon} ${label}</span>`;
+    }
+
+    // ── Update ────────────────────────────────
+    async function updateStatus(id, status) {
+      try {
+        await fetch(API, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status }),
+        });
+        showToast(status === 'confirmed'
+          ? '✅ Cita confirmada correctamente'
+          : '❌ Cita cancelada');
+        await loadAppointments();
+      } catch {
+        showToast('⚠️ No se pudo actualizar. Intenta de nuevo.');
+      }
+    }
+
+    // ── Toast ─────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    function escHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // ── Boot ──────────────────────────────────
+    loadAppointments();
+    setInterval(loadAppointments, 30000); // auto-refresh every 30s
+  </script>
+</body>
+</html>
