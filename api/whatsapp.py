@@ -5,8 +5,9 @@ from datetime import datetime, timedelta
 OPENAI_API_KEY     = os.environ.get("OPENAI_API_KEY", "")
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN  = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_NUMBER      = "+12136957012"
-BOT_NAME           = "Clarivista"
+TWILIO_NUMBER         = "+12136957012"
+MESSAGING_SERVICE_SID = "MG719d8d8e733527783215cf41dbe7ec9e"  # altavision
+BOT_NAME              = "Clarivista"
 APPOINTMENTS_FILE  = "/tmp/altavision_appointments.json"
 
 DAYS_ES = {
@@ -129,7 +130,7 @@ def send_conversations_message(conversation_sid: str, body: str) -> None:
 def send_twilio_message(to: str, body: str) -> None:
     url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json"
     data = urllib.parse.urlencode({
-        "From": f"whatsapp:{TWILIO_NUMBER}",
+        "MessagingServiceSid": MESSAGING_SERVICE_SID,
         "To":   f"whatsapp:{to}",
         "Body": body,
     }).encode()
