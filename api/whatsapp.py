@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 OPENAI_API_KEY     = os.environ.get("OPENAI_API_KEY", "")
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN  = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_NUMBER      = "+19475003923"
+TWILIO_NUMBER      = "+12136957012"
 BOT_NAME           = "Clarivista"
 APPOINTMENTS_FILE  = "/tmp/altavision_appointments.json"
 

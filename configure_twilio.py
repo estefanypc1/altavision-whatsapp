@@ -19,7 +19,7 @@ load_env()
 
 ACCOUNT_SID   = os.environ.get("TWILIO_ACCOUNT_SID", "")
 AUTH_TOKEN    = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_NUMBER = "+18106921979"
+TWILIO_NUMBER = "+12136957012"
 
 if len(sys.argv) < 2:
     print("Uso: python3 configure_twilio.py https://tu-app.vercel.app")
