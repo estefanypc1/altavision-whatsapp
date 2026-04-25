@@ -21,7 +21,6 @@ MONTHS_ES = {
 }
 
 # In-memory sessions: phone -> {history, privacy_accepted}
-# Note: resets on cold start — acceptable for demo
 sessions: dict = {}
 
 PRIVACY_NOTICE = (
@@ -75,13 +74,12 @@ def get_available_slots_text() -> str:
     d = datetime.now() + timedelta(days=1)
     while days_added < 5:
         wd = d.weekday()
-        if wd <= 4:  # Mon-Fri
+        if wd <= 4:
             day_name = DAYS_ES[d.strftime("%A")]
             month_name = MONTHS_ES[d.strftime("%B")]
-            date_str = f"{day_name} {d.day} de {month_name}"
-            slots.append(f"📅 {date_str}: 8:00, 9:00, 10:00, 11:00 AM | 2:00, 3:00, 4:00, 5:00 PM")
+            slots.append(f"📅 {day_name} {d.day} de {month_name}: 8:00, 9:00, 10:00, 11:00 AM | 2:00, 3:00, 4:00, 5:00 PM")
             days_added += 1
-        elif wd == 5:  # Saturday
+        elif wd == 5:
             month_name = MONTHS_ES[d.strftime("%B")]
             slots.append(f"📅 Sábado {d.day} de {month_name}: 8:00, 9:00, 10:00, 11:00 AM")
             days_added += 1
@@ -108,6 +106,26 @@ def _twilio_auth() -> str:
     return base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
 
 
+def _auth_headers() -> dict:
+    return {
+        "Authorization": f"Basic {_twilio_auth()}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+
+# ── Conversations API reply ───────────────────────────────────────────────────
+def send_conversations_message(conversation_sid: str, body: str) -> None:
+    url = f"https://conversations.twilio.com/v1/Conversations/{conversation_sid}/Messages"
+    data = urllib.parse.urlencode({
+        "Body": body,
+        "Author": f"whatsapp:{TWILIO_NUMBER}",
+    }).encode()
+    req = urllib.request.Request(url, data=data, headers=_auth_headers())
+    with urllib.request.urlopen(req, timeout=15) as r:
+        r.read()
+
+
+# ── Simple Messaging API reply (fallback) ─────────────────────────────────────
 def send_twilio_message(to: str, body: str) -> None:
     url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json"
     data = urllib.parse.urlencode({
@@ -115,10 +133,7 @@ def send_twilio_message(to: str, body: str) -> None:
         "To":   f"whatsapp:{to}",
         "Body": body,
     }).encode()
-    req = urllib.request.Request(url, data=data, headers={
-        "Authorization": f"Basic {_twilio_auth()}",
-        "Content-Type": "application/x-www-form-urlencoded",
-    })
+    req = urllib.request.Request(url, data=data, headers=_auth_headers())
     with urllib.request.urlopen(req, timeout=15) as r:
         r.read()
 
@@ -143,13 +158,14 @@ def call_openai(messages: list) -> str:
     return result["choices"][0]["message"]["content"].strip()
 
 
-def handle_message(from_number: str, body: str) -> None:
+def process_message(from_number: str, body: str, reply_fn) -> None:
+    """Core logic: session management, OpenAI call, appointment extraction."""
     session = sessions.get(from_number, {"history": [], "privacy_accepted": False})
 
     if not session["privacy_accepted"]:
         session["privacy_accepted"] = True
         sessions[from_number] = session
-        send_twilio_message(from_number, PRIVACY_NOTICE)
+        reply_fn(PRIVACY_NOTICE)
 
     slots_text = get_available_slots_text()
     system = SYSTEM_PROMPT + f"\n\nDISPONIBILIDAD ACTUAL:\n{slots_text}"
@@ -159,7 +175,6 @@ def handle_message(from_number: str, body: str) -> None:
 
     ai_response = call_openai(messages)
 
-    # Extract and store appointment if bot confirmed one
     if "CITA_CONFIRMADA|" in ai_response:
         try:
             raw = ai_response.split("CITA_CONFIRMADA|", 1)[1].strip()
@@ -168,10 +183,10 @@ def handle_message(from_number: str, body: str) -> None:
             appt = {
                 "id": appt_id,
                 "phone": from_number,
-                "name": parts[0] if len(parts) > 0 else "Paciente",
+                "name":    parts[0] if len(parts) > 0 else "Paciente",
                 "service": parts[1] if len(parts) > 1 else "Consulta",
-                "date": parts[2] if len(parts) > 2 else "",
-                "time": parts[3] if len(parts) > 3 else "",
+                "date":    parts[2] if len(parts) > 2 else "",
+                "time":    parts[3] if len(parts) > 3 else "",
                 "status": "pending",
                 "created_at": datetime.now().isoformat(),
             }
@@ -194,7 +209,7 @@ def handle_message(from_number: str, body: str) -> None:
         session["history"] = session["history"][-40:]
     sessions[from_number] = session
 
-    send_twilio_message(from_number, ai_response)
+    reply_fn(ai_response)
 
 
 def _ok_response() -> bytes:
@@ -217,20 +232,47 @@ class handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length).decode("utf-8")
         params = dict(urllib.parse.parse_qsl(raw))
 
+        event_type = params.get("EventType", "")
+
+        # ── Conversations API (WhatsApp Business) ─────────────────────────────
+        if event_type == "onMessageAdded":
+            author           = params.get("Author", "")
+            body             = params.get("Body", "").strip()
+            conversation_sid = params.get("ConversationSid", "")
+
+            # Skip bot's own messages and empty bodies
+            bot_ids = {
+                f"whatsapp:{TWILIO_NUMBER}", TWILIO_NUMBER,
+                BOT_NAME, BOT_NAME.lower(), "system",
+            }
+            if author in bot_ids or not body or not conversation_sid:
+                self._send_ok()
+                return
+
+            from_number = author.replace("whatsapp:", "")
+            reply_fn = lambda msg: send_conversations_message(conversation_sid, msg)
+
+            try:
+                process_message(from_number, body, reply_fn)
+            except Exception as exc:
+                print(f"[conversations] error: {exc}")
+            self._send_ok()
+            return
+
+        # ── Simple Messaging API (SMS / Sandbox) ──────────────────────────────
         author   = params.get("ProfileName", "").strip()
         from_raw = params.get("From", "")
         body     = params.get("Body", "").strip()
-
         from_number = from_raw.replace("whatsapp:", "")
 
-        # Only skip messages explicitly from the bot/system — never skip on empty ProfileName
         skip = {TWILIO_NUMBER, f"whatsapp:{TWILIO_NUMBER}", BOT_NAME.lower(), BOT_NAME, "system"}
         if (author and author.lower() in {s.lower() for s in skip}) or not body:
             self._send_ok()
             return
 
+        reply_fn = lambda msg: send_twilio_message(from_number, msg)
         try:
-            handle_message(from_number, body)
+            process_message(from_number, body, reply_fn)
         except Exception as exc:
             print(f"[whatsapp] error: {exc}")
 
