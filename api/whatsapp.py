@@ -130,7 +130,7 @@ def send_conversations_message(conversation_sid: str, body: str) -> None:
 def send_twilio_message(to: str, body: str) -> None:
     url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json"
     data = urllib.parse.urlencode({
-        "MessagingServiceSid": MESSAGING_SERVICE_SID,
+        "From": f"whatsapp:{TWILIO_NUMBER}",
         "To":   f"whatsapp:{to}",
         "Body": body,
     }).encode()
